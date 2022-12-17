@@ -1,0 +1,38 @@
+﻿@page "/counter"
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@code {
+    private int currentCount = 0;
+
+    private async Task IncrementCount()
+    {
+        currentCount++;
+
+        // 呼叫 Tauri 的 Invoke
+        var message = await JSRuntime.InvokeAsync<string>(
+            "window.__TAURI__.tauri.invoke", 
+            "greet", 
+            new { name = currentCount.ToString() });
+        Console.WriteLine(message);
+
+        // 用 eval 取得 Tauri JavaScript API 內建的常數
+        var desktopBasePath = await JSRuntime.InvokeAsync<int>(
+            "eval",
+            "window.__TAURI__.fs.BaseDirectory.Desktop");
+
+        // 呼叫 Tauri 的 JavaScript API
+        await JSRuntime.InvokeVoidAsync(
+            "window.__TAURI__.fs.writeTextFile", 
+            "tauri-greet.txt", 
+            message, 
+            new { dir = desktopBasePath });
+    }
+}
